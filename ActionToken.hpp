@@ -1,6 +1,7 @@
 #include <functional>
 #include <thread>
 #include <chrono>
+#include <iostream>
 
 class ActionToken
 {
@@ -35,7 +36,7 @@ class ActionToken
     void cancel();
 
   private:
-    bool itsDone;
+    bool itsComplete;
     std::chrono::nanoseconds itsPollRate;
     std::function<bool()> itsIsComplete;
     std::function<void()> itsOnCancel;
@@ -47,7 +48,7 @@ ActionToken::ActionToken(
     std::function<bool()> isComplete,
     std::function<void()> onCancel,
     DurationType pollrate) :
-  itsDone(false),
+  itsComplete(false),
   itsPollRate(pollrate),
   itsIsComplete(isComplete),
   itsOnCancel(onCancel)
@@ -55,12 +56,12 @@ ActionToken::ActionToken(
 
 // ######################################################################
 ActionToken::ActionToken(ActionToken && other) :
-  itsDone(other.itsDone),
+  itsComplete(other.itsComplete),
   itsPollRate(other.itsPollRate),
   itsIsComplete(other.itsIsComplete),
   itsOnCancel(other.itsOnCancel)
 {
-  other.itsDone = true;
+  other.itsComplete = true;
   other.itsIsComplete = [](){return true;};
   other.itsOnCancel = [](){};
 }
@@ -75,17 +76,16 @@ ActionToken::~ActionToken()
 void ActionToken::cancel()
 {
   if(complete()) return;
-  itsDone = true;
+  itsComplete = true;
   itsOnCancel();
 }
 
 // ######################################################################
 bool ActionToken::complete()
 {
-  if(itsDone) return true;
-  bool complete = itsIsComplete();
-  if(complete) itsDone = true;
-  return itsIsComplete();
+  if(itsComplete) return true;
+  if(itsIsComplete()) itsComplete = true;
+  return itsComplete;
 }
 
 // ######################################################################

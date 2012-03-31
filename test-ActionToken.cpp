@@ -2,6 +2,7 @@
 #include <iostream>
 #include <thread>
 #include <mutex>
+#include <ncurses.h>
 
 // ######################################################################
 class CountingEngine
@@ -11,6 +12,7 @@ class CountingEngine
     ~CountingEngine();
     void setTarget(int target);
     int getCount();
+    void start();
 
   private:
     void run();
@@ -36,16 +38,30 @@ ActionToken countTo(int val)
 // ######################################################################
 int main()
 {
+  initscr();
+  nodelay(stdscr, TRUE);
+
+  countingEngine.start();
+
   ActionToken countingAction = countTo(10);
 
   while(!countingAction.complete())
   {
-    char q;
-    std::cin >> q;
-    if(q == 'x') countingAction.cancel();
+    mvprintw(0,0,"Press any key to cancel");
+    mvprintw(1,0,"Count: %d", countingEngine.getCount());
+
+    if(getch() != ERR) countingAction.cancel();
+
+    refresh();
+    std::this_thread::sleep_for(std::chrono::milliseconds(250));
   }
 
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+  mvprintw(2,0,"Counting Action Stopped");
+  refresh();
+
+  std::this_thread::sleep_for(std::chrono::seconds(2));
+
+  endwin();
   return 0;
 }
 
@@ -72,11 +88,18 @@ int main()
 //////////////////////// Counting Engine Details ... Ignore This //////////////////////// 
 CountingEngine::CountingEngine() :
   itsCount(0),
-  itsRunning(true),
-  itsRunThread(std::thread(std::bind(&CountingEngine::run, this)))
+  itsRunning(false)
 { }
 
-CountingEngine::~CountingEngine() { itsRunning = false; itsRunThread.join(); }
+void CountingEngine::start()
+{
+  itsRunning = true;
+  itsRunThread = std::thread(std::bind(&CountingEngine::run, this));
+}
+
+CountingEngine::~CountingEngine() {
+  itsRunning = false; itsRunThread.join(); 
+}
 
 void CountingEngine::setTarget(int target) 
 {
@@ -98,7 +121,6 @@ void CountingEngine::run()
       std::lock_guard<std::mutex> _(itsMtx);
       if(itsCount < itsTarget)      itsCount++;
       else if(itsCount > itsTarget) itsCount--;
-      std::cout << "Count " << itsCount << std::endl;
     }
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
