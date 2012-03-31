@@ -56,7 +56,7 @@ int main()
     std::this_thread::sleep_for(std::chrono::milliseconds(250));
   }
 
-  mvprintw(2,0,"Counting Action Stopped");
+  mvprintw(2,0,"Counting Action Stopped At: %d", countingEngine.getCount());
   refresh();
 
   std::this_thread::sleep_for(std::chrono::seconds(2));
