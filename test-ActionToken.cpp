@@ -1,6 +1,9 @@
 #include "ActionToken.hpp"
 #include <iostream>
+#include <thread>
+#include <mutex>
 
+// ######################################################################
 class CountingEngine
 {
   public:
@@ -19,19 +22,18 @@ class CountingEngine
 };
 CountingEngine countingEngine;
 
-
-
-
+// ######################################################################
 ActionToken countTo(int val)
 {
   countingEngine.setTarget(val);
 
-  std::function<bool()> isComplete = [val, &countingEngine]() { return countingEngine.getCount() == val; };
-  std::function<void()> onCancel = [&countingEngine]() { countingEngine.setTarget(countingEngine.getCount()); };
+  std::function<bool()> isComplete = [val]() { return countingEngine.getCount() == val; };
+  std::function<void()> onCancel = []() { countingEngine.setTarget(countingEngine.getCount()); };
 
   return ActionToken(isComplete, onCancel);
 }
 
+// ######################################################################
 int main()
 {
   ActionToken countingAction = countTo(10);
@@ -43,7 +45,7 @@ int main()
     if(q == 'x') countingAction.cancel();
   }
 
-  sleep(10);
+  std::this_thread::sleep_for(std::chrono::seconds(10));
   return 0;
 }
 

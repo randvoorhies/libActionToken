@@ -19,6 +19,12 @@ class ActionToken
     /*! On destruction, the ActionToken will always call wait() */
     ~ActionToken();
 
+    //! Action tokens cannot be copied
+    ActionToken(ActionToken const& other) = delete;
+
+    //! Move constructor - ActionTokens may only be moved
+    ActionToken(ActionToken && other);
+
     //! Has the action completed, or been canceled?
     bool complete();
 
@@ -35,8 +41,7 @@ class ActionToken
     std::function<void()> itsOnCancel;
 };
 
-
-
+// ######################################################################
 template<class DurationType>
 ActionToken::ActionToken(
     std::function<bool()> isComplete,
@@ -48,9 +53,25 @@ ActionToken::ActionToken(
   itsOnCancel(onCancel)
 { }
 
-ActionToken::~ActionToken()
-{ wait(); }
+// ######################################################################
+ActionToken::ActionToken(ActionToken && other) :
+  itsDone(other.itsDone),
+  itsPollRate(other.itsPollRate),
+  itsIsComplete(other.itsIsComplete),
+  itsOnCancel(other.itsOnCancel)
+{
+  other.itsDone = true;
+  other.itsIsComplete = [](){return true;};
+  other.itsOnCancel = [](){};
+}
 
+// ######################################################################
+ActionToken::~ActionToken()
+{
+  wait(); 
+}
+
+// ######################################################################
 void ActionToken::cancel()
 {
   if(complete()) return;
@@ -58,6 +79,7 @@ void ActionToken::cancel()
   itsOnCancel();
 }
 
+// ######################################################################
 bool ActionToken::complete()
 {
   if(itsDone) return true;
@@ -66,6 +88,7 @@ bool ActionToken::complete()
   return itsIsComplete();
 }
 
+// ######################################################################
 void ActionToken::wait()
 {
   while(!complete()) std::this_thread::sleep_for(itsPollRate);
