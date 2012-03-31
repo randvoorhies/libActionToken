@@ -1,3 +1,6 @@
+#ifndef LIBACTIONTOKEN_ACTIONTOKEN_HPP
+#define LIBACTIONTOKEN_ACTIONTOKEN_HPP
+
 #include <functional>
 #include <thread>
 #include <chrono>
@@ -94,4 +97,5 @@ void ActionToken::wait()
   while(!complete()) std::this_thread::sleep_for(itsPollRate);
 }
 
+#endif // LIBACTIONTOKEN_ACTIONTOKEN_HPP
 
